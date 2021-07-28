@@ -1,7 +1,14 @@
 <template>
   <div id="home">
     <nav-bar class="home-nav"><div slot="center">购物街</div></nav-bar>
-     <scroll class="content" ref="scroll">
+    <!-- probe-type数据是写死的，加冒号是为了让它以number类型传输，不加冒号是字符串格式 -->
+     <scroll class="content" 
+     ref="scroll" 
+     :probe-type="3" 
+     @scroll="contentScroll"
+     :pull-up-load="true"
+     @pullingUp="loadMore"
+     >
       <home-swiper :banners="banners"></home-swiper>
         <recommend-view :recommends="recommends"></recommend-view>
         <feature-view></feature-view>
@@ -13,7 +20,7 @@
         ></tab-control>
         <good-list :goods="showGoods"></good-list>
      </scroll>
-     <Back-top @click.native="backClick"></Back-top>
+     <Back-top @click.native="backClick" v-show="isShowBackTop"></Back-top>
   </div>
 </template>
 <script>
@@ -48,7 +55,8 @@ export default {
         'new': { page: 0, list: [] },
         'sell': { page: 0, list: [] },
       },
-      currentType:'pop'
+      currentType:'pop',
+      isShowBackTop:false
     };
   },
   computed:{
@@ -88,11 +96,11 @@ export default {
     getHomeGoods(type) {
       const page = this.goods[type].page + 1;
       getHomeGoods(type, page).then((res) => {
-        console.log(type);
         console.log("2333", res);
         this.goods[type].list.push(...res.data.list) 
         this.goods[type].page += 1;
-        console.log(this.goods[type].list);
+
+        this.$refs.scroll.finishPullUp()
       });
     },
     backClick(){
@@ -100,6 +108,16 @@ export default {
       // console.log(this.$refs.scroll.message);
       this.$refs.scroll.scrollTo(0,0,500)
       console.log('点击');
+    },
+    contentScroll(position){
+      this.isShowBackTop = (-position.y) > 1000
+    },
+    loadMore(){
+      this.getHomeGoods(this.currentType)
+      console.log('上拉加载更多');
+
+      // refresh重新加载一遍,数据还没请求到，导致页面没有撑开，可以用refresh重新触发一次插件
+      this.$refs.scroll.scroll.refresh()
     }
   },
 };
@@ -133,9 +151,9 @@ export default {
   right: 0;
   left: 0;
 }
-.content{
+/* .content{
   height: calc(100% - 93px);
   overflow: hidden;
-  /* margin-top: 44px; */
-}
+  margin-top: 44px;
+} */
 </style>
